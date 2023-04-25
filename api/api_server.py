@@ -21,7 +21,6 @@ async def response_get(body: Request, background_tasks: BackgroundTasks):
         body = await body.json()
         if dict(body)['id'] == 'ai_engine.001':
             body = Model_AI.parse_obj(body)
-            # TODO
             background_tasks.add_task(ai_action, body)
             return {"Success": True}
         else:

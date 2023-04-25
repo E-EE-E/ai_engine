@@ -33,21 +33,6 @@ algorithm_list = {
     'lstm' : ai_model
 }
 
-# class meta_data:
-#     def __init__(self, id=None,label=None,service=None,algorithm=None,parameters=None,cols=None,time_range=None,desc=None):
-#         self.id: str = id # model unique id
-#         self.label: str = label # alias of id, unique in service
-#         self.service: str = service # service name
-#         self.algorithm: str = algorithm # learning algorithm name
-#         self.parameters: dict = parameters # learning parameters
-#         self.cols: list = cols # learning cols, if supervised laenring model cols[0] is target column name, e.g.) ['power generation', 'temperature', 'humidity']
-#         self.time_range: list = time_range # learning data time range, e.g.) [ ['2022-03-15 05:14:13', '2022-06-10 06:38:25'], ['2023-01-14 00:00:00', '2023-02-14 06:00:00'] ]
-#         self.desc: str = desc # description of model
-    
-#     def get_json(self):
-#         return json.dumps(self.__dict__)
-#     def get_dict(self):
-#         return self.__dict__
 
 class model_handler():
     def __init__(self, id, algorithm, parameters, meta, data=None):
@@ -66,12 +51,13 @@ class model_handler():
 
         self.set(algorithm, parameters, meta)
     
-    def set(self, algorithm=None, parameters=None, meta=None):
+    def set(self, algorithm=None, parameters=None, meta=None, reset=False):
         temp_data_set = None
-        try:
-            temp_data_set = self.model.dataset
-        except:
-            pass
+        if reset==False:
+            try:
+                temp_data_set = self.model.dataset
+            except:
+                pass
 
         if parameters!=None:
             if algorithm!=None:
@@ -110,22 +96,27 @@ class model_handler():
             else:
                 self.model.add_data(data=data_set, data_type=data_type)
         except Exception as e:
-            raise RuntimeError(e)
-    
+            msg = f'model_handler.add_data failed : {e}'
+            raise RuntimeError(msg)
+
     def remove_data(self):
         self.model.remove_data()
 
     def fit(self):
-        self.model.fit()
+        try:
+            self.model.fit()
+        except Exception as e:
+            msg = f'model_handler.fit failed : {e}'
+            raise RuntimeError(msg)
 
-    # TODO 필요없는듯?
-    # def update(self):
-    #     pass
     def predict(self, data, data_type, batch_size):
         try:
-            res = []
-            for _data in data:
-                res.append( self.model.predict(data=_data, data_type=data_type, batch_size=batch_size) )
+            if data_type in ['pkl', 'csv'] and type(data)==list:
+                res = []
+                for _data in data:
+                    res.append( self.model.predict(data=_data, data_type=data_type, batch_size=batch_size) )
+            else:
+                res = self.model.predict(data=data, data_type=data_type, batch_size=batch_size)
             return res
         except Exception as e:
             raise RuntimeError(e)

@@ -91,7 +91,7 @@ def get_list(case:str) -> list:
         logger.error(msg)
         raise RuntimeError(msg)
 
-def load(id:str, case:str) -> model_handler:
+def load(id:str, case:str) -> model_handler or list:
     '''
     load file with given id
     return loaded object
@@ -108,8 +108,8 @@ def load(id:str, case:str) -> model_handler:
         file_pattern = f'/{id}.pkl'
         filepath = _path+file_pattern
         f = open(filepath, 'r+b')
-        _model = pickle.load(f)
-        return _model
+        _obj = pickle.load(f)
+        return _obj
 
     except Exception as e:
         msg = f'load {case} failed : {e}'
@@ -213,9 +213,11 @@ def save(obj, case:str, id:str=None) -> bool:
             if id==None:
                 msg = f'id is required to save data'
                 raise ValueError(msg)
-            _path = f'{attribute.ROOT_DIR_AI_ENGINE}/data/{id}.pkl'
+            _path = f'{attribute.DIRECTORY_DATA}/{id}.pkl'
         with open(_path, 'w+b') as f:
             pickle.dump(obj, f)
+            if attribute.DEBUG:
+                logger.info(f'file saved : [{case}] {_path}')
         return _path
     except Exception as e:
         raise RuntimeError(f'save file failed : {e}')

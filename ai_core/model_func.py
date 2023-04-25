@@ -88,7 +88,7 @@ def ai_process(config:dict):
                 elif config[str_func] == str_predict:
                     res = ai_process_predict(config)
                 else:
-                    raise ValueError(f'config[{str_func}] value not available : {config[str_func]}')
+                    raise ValueError(f'config[{str_func}] is not available : {config[str_func]}')
             except Exception as e:
                 raise RuntimeError(f'ai_process failed : {e}')
         elif not res:
@@ -102,7 +102,7 @@ def ai_process(config:dict):
         if attribute.DEBUG:
             logger.error(msg)
         raise RuntimeError(msg)
-    
+
 def ai_process_learn(config:dict):
     '''
     generate model with given algorithm and parameters, set ai_id as given ai_id or auto generated ai_id
@@ -114,37 +114,32 @@ def ai_process_learn(config:dict):
         meta = config[str_meta]
 
         mh:model_handler
-        # load existed model
         if str_ai_id in meta.keys() and meta[str_ai_id] != None:
-            mh = load(meta[str_ai_id])
-            if mh==False:
-                logger.info(f'model ai_id does not exist')
-                return False
-            mh.set(data=config[str_data], meta=meta, parameters=meta[str_parameters])
-
-        # create new model
-        else:
+            # load existed model
+            if check_existence(meta[str_ai_id], case=str_model)==True:
+                mh = load(meta[str_ai_id], case=str_model)
+                mh.set(algorithm=meta[str_algorithm], meta=meta, parameters=meta[str_parameters], reset=True)
             # create model with given ai_id
-            if str_ai_id in meta.keys():
-                if check_existence(str_ai_id, case=str_model)==True:
-                    msg = f'given model id already exist, use different id'
-                    raise RuntimeError(msg)
-                mh = model_handler(id=meta[str_ai_id], algorithm=meta[str_algorithm], parameters=meta[str_parameters], meta=meta, data=config[str_data])
-            # create model with generated_uuid to ai_id
             else:
-                cnt = 3
-                while cnt>0:
-                    _id = generate_uuid()
-                    if check_existence(_id, case=str_model)==False:
-                        break
-                    cnt-=1
-                    time.sleep(0.1)
-                if cnt<=0:
-                    msg = f'generate unique model id failed'
-                    raise RuntimeError(msg)
-                mh = model_handler(id=_id, algorithm=meta[str_algorithm], parameters=meta[str_parameters], meta=meta, data=config[str_data])
+                mh = model_handler(id=meta[str_ai_id], algorithm=meta[str_algorithm], parameters=meta[str_parameters], meta=meta, data=config[str_data])
+        # create model with generated_uuid to ai_id
+        else:
+            cnt = 3
+            while cnt>0:
+                _id = generate_uuid()
+                if check_existence(_id, case=str_model)==False:
+                    break
+                cnt-=1
+                time.sleep(0.1)
+            if cnt<=0:
+                msg = f'generate unique model id failed'
+                raise RuntimeError(msg)
+            mh = model_handler(id=_id, algorithm=meta[str_algorithm], parameters=meta[str_parameters], meta=meta, data=config[str_data])
         
+        # TODO add_data 데이터 있을 때 에러남 확인필요
         mh.add_data(data_set=config[str_data], data_type=config[str_data_type])
+        if attribute.DEBUG:
+            logger.info(f'dataset shape : {np.asarray(mh.model.dataset).shape}\napi dataset : {config[str_data]}')
         mh.fit()
         save(mh, case=str_model)
         if attribute.DEBUG:
@@ -153,7 +148,6 @@ def ai_process_learn(config:dict):
 
     except Exception as e:
         msg = f'ai_process_learn failed : {e}'
-        logger.error(msg)
         raise RuntimeError(msg)
 
 def ai_process_update(config:dict):
@@ -171,17 +165,7 @@ def ai_process_update(config:dict):
             if attribute.DEBUG:
                 logger.info(msg)
             raise ValueError(msg)
-        # check_list = [str_algorithm, str_parameters, str_data, str_data_type]
-        
-        update_dict = {
-            str_data : None,
-            str_data_type : None,
-            str_meta : {
-                str_algorithm : None,
-                str_parameters : None
-            }
-        }
-        # TODO
+
         if str_data not in config.keys():
             config[str_data] = None
         if str_data_type not in config.keys():
@@ -195,9 +179,12 @@ def ai_process_update(config:dict):
         elif str_meta not in config.keys():
             config[str_meta] = None
 
-        mh.set(algorithm=config[str_meta][str_algorithm], parameters=config[str_meta][str_parameters], meta=config[str_meta])
-        if update_dict[str_data] is not None and update_dict[str_data_type] is not None:
-            mh.add_data(data_set=update_dict[str_data], data_type=update_dict[str_data_type])
+        mh.set(algorithm=config[str_meta][str_algorithm], parameters=config[str_meta][str_parameters], meta=config[str_meta], reset=False)
+        if config[str_data] is not None and config[str_data_type] is not None:
+            logger.info(f'set update data : [{config[str_data_type]}]   {config[str_data]}')
+            mh.add_data(data_set=config[str_data], data_type=config[str_data_type])
+        if attribute.DEBUG:
+            logger.info(f'dataset shape : {np.asarray(mh.model.dataset).shape}\napi dataset : {config[str_data]}')
         mh.fit()
         save(mh, case=str_model)
         return mh.id
@@ -235,5 +222,4 @@ def ai_process_predict(config:dict):
 
     except Exception as e:
         msg = f'ai_process_predict failed : {e}'
-        logger.error(msg)
         raise RuntimeError(msg)
