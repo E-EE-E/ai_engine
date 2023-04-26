@@ -181,7 +181,6 @@ def ai_process_update(config:dict):
 
         mh.set(algorithm=config[str_meta][str_algorithm], parameters=config[str_meta][str_parameters], meta=config[str_meta], reset=False)
         if config[str_data] is not None and config[str_data_type] is not None:
-            logger.info(f'set update data : [{config[str_data_type]}]   {config[str_data]}')
             mh.add_data(data_set=config[str_data], data_type=config[str_data_type])
         if attribute.DEBUG:
             logger.info(f'dataset shape : {np.asarray(mh.model.dataset).shape}\napi dataset : {config[str_data]}')

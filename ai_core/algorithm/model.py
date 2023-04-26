@@ -261,8 +261,9 @@ class ai_model:
 
             # 전체 학습 시간 계산
             time_elapsed = time.time() - _time
-            print(f'\nTraining complete in {time_elapsed//60:.0f}m {time_elapsed % 60:.0f}s')
-            print(f'Best val MSE: {best_val_loss:4f}')
+            if attribute.DEBUG:
+                msg = f'\nTraining complete in {time_elapsed//60:.0f}m {time_elapsed % 60:.0f}s\nBest val MSE: {best_val_loss:4f}'
+                logger.info(msg)
 
             # validation loss가 가장 낮았을 때의 best model 가중치를 불러와 best model을 구축함
             self.model.load_state_dict(best_model_wts)
